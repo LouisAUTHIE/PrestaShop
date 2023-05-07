@@ -34,6 +34,7 @@ import BulkActionCheckboxExtension from '@components/grid/extension/bulk-action-
 import ExportToSqlManagerExtension from '@components/grid/extension/export-to-sql-manager-extension';
 import FiltersSubmitButtonEnablerExtension
   from '@components/grid/extension/filters-submit-button-enabler-extension';
+import TranslatableInput from '@components/translatable-input';
 
 const {$} = window;
 
@@ -49,4 +50,6 @@ $(() => {
   grid.addExtension(new SubmitBulkExtension());
   grid.addExtension(new BulkActionCheckboxExtension());
   grid.addExtension(new FiltersSubmitButtonEnablerExtension());
+
+  new TranslatableInput();
 });
