@@ -26,21 +26,31 @@
 
 namespace PrestaShopBundle\Form\Admin\Configure\ShopParameters\Store;
 
-use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\DefaultLanguage;
-use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\NoTags;
+use Symfony\Component\Routing\RouterInterface;
 use PrestaShopBundle\Form\Admin\Type\EmailType;
-use PrestaShopBundle\Form\Admin\Type\ShopChoiceTreeType;
 use PrestaShopBundle\Form\Admin\Type\SwitchType;
-use PrestaShopBundle\Form\Admin\Type\TranslatableType;
-use PrestaShopBundle\Form\Admin\Type\TranslatorAwareType;
-use Symfony\Component\Form\DataTransformerInterface;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\Email;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Form\DataTransformerInterface;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use PrestaShopBundle\Form\Admin\Type\TranslatableType;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use PrestaShopBundle\Form\Admin\Type\CountryChoiceType;
+use PrestaShopBundle\Form\Admin\Type\ShopChoiceTreeType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use PrestaShopBundle\Form\Admin\Type\TranslatorAwareType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\NoTags;
+use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\CleanHtml;
+use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\TypedRegex;
+use PrestaShop\PrestaShop\Core\Form\ConfigurableFormChoiceProviderInterface;
+use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\AddressZipCode;
+use PrestaShop\PrestaShop\Core\Domain\Address\Configuration\AddressConstraint;
+use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\DefaultLanguage;
+use PrestaShop\PrestaShop\Core\ConstraintValidator\Constraints\AddressStateRequired;
 
 /**
  * Class StoreType
@@ -55,25 +65,41 @@ class StoreType extends TranslatorAwareType
     private $isShopFeatureEnabled;
 
     /**
-     * @var DataTransformerInterface
+     * @var ConfigurableFormChoiceProviderInterface
      */
-    private $singleDefaultLanguageArrayToFilledArrayDataTransformer;
+    private $stateChoiceProvider;
+
+    /**
+     * @var int
+     */
+    private $contextCountryId;
+
+    /**
+     * @var RouterInterface
+     */
+    private $router;    
 
     /**
      * @param TranslatorInterface $translator
      * @param array $locales
-     * @param DataTransformerInterface $singleDefaultLanguageArrayToFilledArrayDataTransformer
      * @param bool $isShopFeatureEnabled
+     * @param ConfigurableFormChoiceProviderInterface $stateChoiceProvider
+     * @param int $contextCountryId
+     * @param RouterInterface $router
      */
     public function __construct(
         TranslatorInterface $translator,
         array $locales,
-        DataTransformerInterface $singleDefaultLanguageArrayToFilledArrayDataTransformer,
-        $isShopFeatureEnabled
+        $isShopFeatureEnabled,
+        ConfigurableFormChoiceProviderInterface $stateChoiceProvider,
+        $contextCountryId,
+        RouterInterface $router
     ) {
         parent::__construct($translator, $locales);
         $this->isShopFeatureEnabled = $isShopFeatureEnabled;
-        $this->singleDefaultLanguageArrayToFilledArrayDataTransformer = $singleDefaultLanguageArrayToFilledArrayDataTransformer;
+        $this->stateChoiceProvider = $stateChoiceProvider;
+        $this->contextCountryId = $contextCountryId;
+        $this->router = $router;
     }
 
     /**
@@ -81,10 +107,16 @@ class StoreType extends TranslatorAwareType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        $data = $builder->getData();
+        $countryId = 0 !== $data['id_country'] ? $data['id_country'] : $this->contextCountryId;
+        $stateChoices = $this->stateChoiceProvider->getChoices(['id_country' => $countryId]);
+        $showStates = !empty($stateChoices);
+
         $builder
             ->add('name', TranslatableType::class, [
                 'label' => $this->trans('Name', 'Admin.Global'),
                 'help' => $this->trans('Store name', 'Admin.Shopparameters.Help'),
+                'required' => false,
                 'constraints' => [
                     new DefaultLanguage(),
                 ],
@@ -104,68 +136,159 @@ class StoreType extends TranslatorAwareType
             ->add('address1', TranslatableType::class, [
                 'label' => $this->trans('Address', 'Admin.Global'),
                 'constraints' => [
-                    new DefaultLanguage(),
+                    new NotBlank([
+                        'message' => $this->trans(
+                            'This field cannot be empty.', 'Admin.Notifications.Error'
+                        ),
+                    ]),
+                    new CleanHtml(),
+                    new TypedRegex([
+                        'type' => TypedRegex::TYPE_ADDRESS,
+                    ]),
+                    new Length([
+                        'max' => AddressConstraint::MAX_ADDRESS_LENGTH,
+                        'maxMessage' => $this->trans(
+                            'This field cannot be longer than %limit% characters',
+                            'Admin.Notifications.Error',
+                            ['%limit%' => AddressConstraint::MAX_ADDRESS_LENGTH]
+                        ),
+                    ]),
                 ],
                 'options' => [],
             ])
             ->add('address2', TranslatableType::class, [
                 'label' => $this->trans('Address (2)', 'Admin.Global'),
+                'required' => false,
                 'constraints' => [
-                    new DefaultLanguage(),
+                    new CleanHtml(),
+                    new TypedRegex([
+                        'type' => TypedRegex::TYPE_ADDRESS,
+                    ]),
+                    new Length([
+                        'max' => AddressConstraint::MAX_ADDRESS_LENGTH,
+                        'maxMessage' => $this->trans(
+                            'This field cannot be longer than %limit% characters',
+                            'Admin.Notifications.Error',
+                            ['%limit%' => AddressConstraint::MAX_ADDRESS_LENGTH]
+                        ),
+                    ]),
                 ],
                 'options' => [],
             ])
-            ->add('email', EmailType::class, [
-                'label' => $this->trans('Email address', 'Admin.Global'),
-                'help' => $this->trans('Emails will be sent to this address.', 'Admin.Shopparameters.Help'),
+            ->add('postcode', TextType::class, [
+                'label' => $this->trans('Zip/Postal code', 'Admin.Global'),
                 'required' => false,
                 'constraints' => [
-                    new Email([
-                        'message' => $this->trans(
-                            '%s is invalid.',
-                            'Admin.Notifications.Error'
+                    new AddressZipCode([
+                        'id_country' => $countryId,
+                        'required' => false,
+                    ]),
+                    new CleanHtml(),
+                    new TypedRegex([
+                        'type' => TypedRegex::TYPE_POST_CODE,
+                    ]),
+                    new Length([
+                        'max' => AddressConstraint::MAX_POSTCODE_LENGTH,
+                        'maxMessage' => $this->trans(
+                            'This field cannot be longer than %limit% characters',
+                            'Admin.Notifications.Error',
+                            ['%limit%' => AddressConstraint::MAX_POSTCODE_LENGTH]
                         ),
                     ]),
                 ],
             ])
-            ->add('is_messages_saving_enabled', SwitchType::class, [
-                'label' => $this->trans('Save messages?', 'Admin.Shopparameters.Feature'),
-                'help' => $this->trans('If enabled, all messages will be saved in the "Customer Service" page under the "Customer" menu.', 'Admin.Shopparameters.Help'),
-            ])
-            ->add('description', TranslatableType::class, [
-                'label' => $this->trans('Description', 'Admin.Global'),
-                'type' => TextareaType::class,
-                'required' => false,
-                'options' => [
-                    'constraints' => [
-                        new NoTags([
-                            'message' => $this->trans(
-                                'The "%s" field is invalid. HTML tags are not allowed.',
-                                'Admin.Notifications.Error'
-                            ),
-                        ]),
-                    ],
+            ->add('city', TextType::class, [
+                'label' => $this->trans('City', 'Admin.Global'),
+                'constraints' => [
+                    new NotBlank([
+                        'message' => $this->trans(
+                            'This field is required', 'Admin.Notifications.Error'
+                        ),
+                    ]),
+                    new CleanHtml(),
+                    new TypedRegex([
+                        'type' => TypedRegex::TYPE_CITY_NAME,
+                    ]),
+                    new Length([
+                        'max' => AddressConstraint::MAX_CITY_LENGTH,
+                        'maxMessage' => $this->trans(
+                            'This field cannot be longer than %limit% characters',
+                            'Admin.Notifications.Error',
+                            ['%limit%' => AddressConstraint::MAX_CITY_LENGTH]
+                        ),
+                    ]),
                 ],
             ])
+            ->add('id_country', CountryChoiceType::class, [
+                'label' => $this->trans('Country', 'Admin.Global'),
+                'required' => true,
+                'constraints' => [
+                    new NotBlank([
+                        'message' => $this->trans(
+                            'This field cannot be empty.', 'Admin.Notifications.Error'
+                        ),
+                    ]),
+                ],
+                'attr' => [
+                    'data-states-url' => $this->router->generate('admin_country_states'),
+                    'data-toggle' => 'select2',
+                    'data-minimumResultsForSearch' => '7',
+                ],
+            ])->add('id_state', ChoiceType::class, [
+                'label' => $this->trans('State', 'Admin.Global'),
+                'required' => true,
+                'choices' => $stateChoices,
+                'constraints' => [
+                    new AddressStateRequired([
+                        'id_country' => $countryId,
+                    ]),
+                ],
+                'row_attr' => [
+                    'class' => 'js-store-state-select',
+                ],
+                'attr' => [
+                    'visible' => $showStates,
+                    'data-toggle' => 'select2',
+                    'data-minimumResultsForSearch' => '7',
+                ],
+            ])
+            ->add('phone', TextType::class, [
+                'label' => $this->trans('Phone', 'Admin.Global'),
+                'required' => false,
+                'empty_data' => '',
+                'constraints' => [
+                    new CleanHtml(),
+                    new TypedRegex([
+                        'type' => TypedRegex::TYPE_PHONE_NUMBER,
+                    ]),
+                    new Length([
+                        'max' => AddressConstraint::MAX_PHONE_LENGTH,
+                        'maxMessage' => $this->trans(
+                            'This field cannot be longer than %limit% characters',
+                            'Admin.Notifications.Error',
+                            ['%limit%' => AddressConstraint::MAX_PHONE_LENGTH]
+                        ),
+                    ]),
+                ],
+            ])
+            
         ;
 
-        //$builder->get('title')->addModelTransformer($this->singleDefaultLanguageArrayToFilledArrayDataTransformer);
-
-        // if ($this->isShopFeatureEnabled) {
-        //     $builder->add('shop_association', ShopChoiceTreeType::class, [
-        //         'label' => $this->trans('Store association', 'Admin.Global'),
-        //         'constraints' => [
-        //             new NotBlank([
-        //                 'message' => $this->trans(
-        //                     'The %s field is required.',
-        //                     'Admin.Notifications.Error',
-        //                     [
-        //                         sprintf('"%s"', $this->trans('Store association', 'Admin.Global')),
-        //                     ]
-        //                 ),
-        //             ]),
-        //         ],
-        //     ]);
-        // }
+        if ($this->isShopFeatureEnabled) {
+            $builder->add('shop_association', ShopChoiceTreeType::class, [
+                'label' => $this->trans('Store association', 'Admin.Global'),
+                'constraints' => [
+                    new NotBlank([
+                        'message' => $this->trans(
+                            'The %s field is required.',
+                            'Admin.Notifications.Error',
+                            [
+                                sprintf('"%s"', $this->trans('Store association', 'Admin.Global')),
+                            ]
+                        ),
+                    ]),
+                ],
+            ]);
+        }
     }
 }

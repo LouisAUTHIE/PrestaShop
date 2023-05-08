@@ -86,7 +86,12 @@ class StoreController extends FrameworkBundleAdminController
     public function createAction(Request $request)
     {
         $storeFormBuilder = $this->get('prestashop.core.form.identifiable_object.builder.store_form_builder');
-        $storeForm = $storeFormBuilder->getForm();
+        $formData = [];
+        $legacyContext = $this->get('prestashop.adapter.legacy.context')->getContext();
+        if(is_int($legacyContext->country->id)  && $legacyContext->country->id > 0)
+            $formData['id_country'] = $legacyContext->country->id;
+
+        $storeForm = $storeFormBuilder->getForm($formData);
         $storeForm->handleRequest($request);
 
         // try {

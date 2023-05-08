@@ -35,6 +35,9 @@ import ExportToSqlManagerExtension from '@components/grid/extension/export-to-sq
 import FiltersSubmitButtonEnablerExtension
   from '@components/grid/extension/filters-submit-button-enabler-extension';
 import TranslatableInput from '@components/translatable-input';
+import CountryStateSelectionToggler from '@components/country-state-selection-toggler';
+import CountryPostcodeRequiredToggler from '@components/country-postcode-required-toggler';
+import storeFormMap from './store-form-map';
 
 const {$} = window;
 
@@ -52,4 +55,14 @@ $(() => {
   grid.addExtension(new FiltersSubmitButtonEnablerExtension());
 
   new TranslatableInput();
+  new CountryStateSelectionToggler(
+    storeFormMap.storeCountrySelect,
+    storeFormMap.storeStateSelect,
+    storeFormMap.storeStateBlock,
+  );
+  new CountryPostcodeRequiredToggler(
+    storeFormMap.storeCountrySelect,
+    storeFormMap.storePostcodeInput,
+    storeFormMap.storePostcodeInputLabel,
+  );
 });
