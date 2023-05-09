@@ -26,6 +26,7 @@
 
 namespace PrestaShopBundle\Form\Admin\Configure\ShopParameters\Store;
 
+use PrestaShopBundle\Form\Admin\Type\GeoCoordinatesType;
 use Symfony\Component\Routing\RouterInterface;
 use PrestaShopBundle\Form\Admin\Type\EmailType;
 use PrestaShopBundle\Form\Admin\Type\SwitchType;
@@ -270,6 +271,14 @@ class StoreType extends TranslatorAwareType
                         ),
                     ]),
                 ],
+            ])
+            ->add('latlon', GeoCoordinatesType::class, [
+                'label' => $this->trans('Position', 'Admin.Global'),
+                'required' => false,
+                'empty_data' => '',
+                'label_latitude' => 'Latitude',
+                'label_longitude' => 'Longitude',
+                'attr' => ['class'=>'form-inline'],
             ])
             
         ;
