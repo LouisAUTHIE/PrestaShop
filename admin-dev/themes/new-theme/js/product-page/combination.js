@@ -211,6 +211,7 @@ export default function () {
         $('#create-combinations, #submit, .btn-submit').removeAttr('disabled');
         activateCombinationsBulk();
         window.supplierCombinations.refresh();
+        window.warehouseCombinations.refresh();
       },
     });
   };

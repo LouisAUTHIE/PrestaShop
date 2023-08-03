@@ -531,16 +531,21 @@ class PackCore extends Product
      * @param int $id_product id_pack
      *
      * @return bool
-     *
-     * @deprecated Since 9.0 and will be removed in 10.0
      */
     public static function usesAdvancedStockManagement($id_product)
     {
-        @trigger_error(sprintf(
-            '%s is deprecated since 9.0 and will be removed in 10.0.',
-            __METHOD__
-        ), E_USER_DEPRECATED);
+        if (!Pack::isPack($id_product)) {
+            return false;
+        }
 
+        $products = Pack::getItems($id_product, Configuration::get('PS_LANG_DEFAULT'));
+        foreach ($products as $product) {
+            // if one product uses the advanced stock management
+            if ($product->advanced_stock_management == 1) {
+                return true;
+            }
+        }
+        // not used
         return false;
     }
 
@@ -550,17 +555,22 @@ class PackCore extends Product
      * @param int $id_product id_pack
      *
      * @return bool
-     *
-     * @deprecated Since 9.0 and will be removed in 10.0
      */
     public static function allUsesAdvancedStockManagement($id_product)
     {
-        @trigger_error(sprintf(
-            '%s is deprecated since 9.0 and will be removed in 10.0.',
-            __METHOD__
-        ), E_USER_DEPRECATED);
+        if (!Pack::isPack($id_product)) {
+            return false;
+        }
 
-        return false;
+        $products = Pack::getItems($id_product, Configuration::get('PS_LANG_DEFAULT'));
+        foreach ($products as $product) {
+            // if one product uses the advanced stock management
+            if ($product->advanced_stock_management == 0) {
+                return false;
+            }
+        }
+        // not used
+        return true;
     }
 
     /**

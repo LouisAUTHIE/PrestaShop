@@ -211,6 +211,7 @@ final class AddProductToOrderHandler extends AbstractOrderHandler implements Add
                 $command->getProductPriceTaxExcluded(),
                 $command->getProductPriceTaxIncluded()
             );
+            StockAvailable::synchronize($product->id);
 
             $this->updateAffectedOrderDetails(
                 $order,

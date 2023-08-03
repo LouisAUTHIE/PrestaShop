@@ -13,7 +13,6 @@ services:
 
   prestashop.adapter.supplier.supplier_order_validator:
     class: 'PrestaShop\PrestaShop\Adapter\Supplier\SupplierOrderValidator'
-    deprecated: ~
 
   # Command handlers
 
@@ -21,6 +20,7 @@ services:
     class: 'PrestaShop\PrestaShop\Adapter\Supplier\CommandHandler\AbstractDeleteSupplierHandler'
     abstract: true
     arguments:
+      - '@prestashop.adapter.supplier.supplier_order_validator'
       - '@prestashop.adapter.supplier.provider.supplier_address'
       - '@PrestaShop\PrestaShop\Adapter\Product\Update\ProductSupplierUpdater'
       - '%database_prefix%'

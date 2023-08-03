@@ -224,6 +224,12 @@ parameters:
               - StylesheetManager
               - Supplier
               - SupplierAddress
+              - SupplyOrder
+              - SupplyOrderDetail
+              - SupplyOrderHistory
+              - SupplyOrderReceiptHistory
+              - SupplyOrderState
+              - SupplyOrderStateLang
               - Tab
               - TabLang
               - Tag
@@ -250,6 +256,9 @@ parameters:
               - Uploader
               - Validate
               - ValidateConstraintTranslator
+              - Warehouse
+              - WarehouseAddress
+              - WarehouseProductLocation
               - WebserviceException
               - WebserviceKey
               - WebserviceOutputBuilder

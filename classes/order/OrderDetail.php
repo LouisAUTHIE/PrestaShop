@@ -163,11 +163,8 @@ class OrderDetailCore extends ObjectModel
     /** @var int Id tax rules group */
     public $id_tax_rules_group;
 
-    /** @var int Id warehouse
-     *
-     * @deprecated since 9.0, advanced stock management has been completely removed
-     */
-    public $id_warehouse = 0;
+    /** @var int Id warehouse */
+    public $id_warehouse;
 
     /** @var float additional shipping price tax excl */
     public $total_shipping_price_tax_excl;
@@ -550,20 +547,24 @@ class OrderDetailCore extends ObjectModel
         if (in_array($orderStateId, $dismissOrderStateIds)) {
             return;
         }
-        $orderState = new OrderState($orderStateId, $this->id_lang);
-        $isQuantityUpdated = StockAvailable::updateQuantity(
-            $product['id_product'],
-            $product['id_product_attribute'],
-            -(int) $product['cart_quantity'],
-            $product['id_shop'],
-            // Add stock movement only if order state is flagged as shipped
-            true === (bool) $orderState->shipped,
-            [
-                'id_order' => $this->id_order,
-                // Only one stock movement reason fits a new order creation
-                'id_stock_mvt_reason' => Configuration::get('PS_STOCK_CUSTOMER_ORDER_REASON'),
-            ]
-        );
+        if (!StockAvailable::dependsOnStock($product['id_product'])) {
+            $orderState = new OrderState($orderStateId, $this->id_lang);
+            $isQuantityUpdated = StockAvailable::updateQuantity(
+                $product['id_product'],
+                $product['id_product_attribute'],
+                -(int) $product['cart_quantity'],
+                $product['id_shop'],
+                // Add stock movement only if order state is flagged as shipped
+                true === (bool) $orderState->shipped,
+                [
+                    'id_order' => $this->id_order,
+                    // Only one stock movement reason fits a new order creation
+                    'id_stock_mvt_reason' => Configuration::get('PS_STOCK_CUSTOMER_ORDER_REASON'),
+                ]
+            );
+        } else {
+            $isQuantityUpdated = true;
+        }
         if ($isQuantityUpdated === true) {
             $product['stock_quantity'] -= $product['cart_quantity'];
         }
@@ -749,7 +750,7 @@ class OrderDetailCore extends ObjectModel
      * @param int $id_order_state
      * @param int $id_order_invoice
      * @param bool $use_taxes set to false if you don't want to use taxes
-     * @param int $id_warehouse - not used anymore
+     * @param int $id_warehouse
      */
     protected function create(Order $order, Cart $cart, $product, $id_order_state, $id_order_invoice, $use_taxes = true, $id_warehouse = 0)
     {
@@ -775,6 +776,7 @@ class OrderDetailCore extends ObjectModel
         $this->product_supplier_reference = empty($product['supplier_reference']) ? null : pSQL($product['supplier_reference']);
         $product_weight = $product['id_product_attribute'] ? (float) $product['weight_attribute'] : (float) $product['weight'];
         $this->product_weight = $product_weight + Customization::getCustomizationWeight($product['id_customization']);
+        $this->id_warehouse = $id_warehouse;
 
         // We get the real quantity of the product in stock and save how much of the ordered quantity was in stock
         $product_quantity_in_stock = (int) Product::getQuantity($this->product_id, $this->product_attribute_id);
@@ -817,7 +819,7 @@ class OrderDetailCore extends ObjectModel
      * @param array $product_list
      * @param int $id_order_invoice
      * @param bool $use_taxes set to false if you don't want to use taxes
-     * @param int $id_warehouse - not used anymore
+     * @param int $id_warehouse
      */
     public function createList(Order $order, Cart $cart, $id_order_state, $product_list, $id_order_invoice = 0, $use_taxes = true, $id_warehouse = 0)
     {
@@ -828,7 +830,7 @@ class OrderDetailCore extends ObjectModel
         $this->outOfStock = false;
 
         foreach ($product_list as $product) {
-            $this->create($order, $cart, $product, $id_order_state, $id_order_invoice, $use_taxes);
+            $this->create($order, $cart, $product, $id_order_state, $id_order_invoice, $use_taxes, $id_warehouse);
         }
 
         unset(

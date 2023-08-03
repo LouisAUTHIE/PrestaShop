@@ -27,6 +27,7 @@
 namespace PrestaShop\PrestaShop\Adapter;
 
 use Db;
+use PrestaShop\PrestaShop\Adapter\Configuration as ConfigurationAdapter;
 use PrestaShop\PrestaShop\Adapter\Shop\Context as ShopAdapter;
 use PrestaShopBundle\Service\DataProvider\StockInterface;
 use StockAvailable;
@@ -83,17 +84,10 @@ class StockManager implements StockInterface
      * Returns True if Stocks are managed by a module (or by legacy ASM).
      *
      * @return bool True if Stocks are managed by a module (or by legacy ASM)
-     *
-     * @deprecated Since 9.0 and will be removed in 10.0
      */
     public function isAsmGloballyActivated()
     {
-        @trigger_error(sprintf(
-            '%s is deprecated since 9.0 and will be removed in 10.0.',
-            __METHOD__
-        ), E_USER_DEPRECATED);
-
-        return false;
+        return (bool) (new ConfigurationAdapter())->get('PS_ADVANCED_STOCK_MANAGEMENT');
     }
 
     /**
@@ -236,7 +230,7 @@ class StockManager implements StockInterface
      * @param int $productId
      * @param int $shopId Optional : gets context if null @see Context::getContext()
      *
-     * @return bool True if product is orderable when out of stock
+     * @return bool : depends on stock @see $depends_on_stock
      */
     public function outOfStock($productId, $shopId = null)
     {

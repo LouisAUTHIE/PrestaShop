@@ -1,4 +1,5 @@
-{#**
+<?php
+/**
  * Copyright since 2007 PrestaShop SA and Contributors
  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
  *
@@ -21,28 +22,13 @@
  * @author    PrestaShop SA and Contributors <contact@prestashop.com>
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/OSL-3.0 Open Software License (OSL 3.0)
- *#}
-{{ component('Header', {
-  link: link,
-  viewport_scale: viewport_scale|default(null),
-  img_dir: img_dir,
-  meta_title: meta_title,
-  shop_name: shop_name,
-  display_header_javascript: display_header_javascript|default(false),
-  controller_name: controller_name,
-  iso_user: iso_user,
-  lang_is_rtl: lang_is_rtl,
-  full_language_code: full_language_code,
-  full_cldr_language_code: full_cldr_language_code,
-  country_iso_code: country_iso_code,
-  ps_version: ps_version,
-  round_mode: round_mode,
-  shop_context: shop_context,
-  token: token,
-  currentIndex: currentIndex,
-  default_language: default_language,
-  css_files: css_files,
-  js_files: js_files|default([]),
-  js_inline: js_inline|default([]),
-  displayBackOfficeHeader: displayBackOfficeHeader|default(null)
-}) }}
+ */
+
+namespace PrestaShop\PrestaShop\Core\Domain\Employee\Exception;
+
+/**
+ * Is thrown when warehouse manager cannot be deleted
+ */
+class CannotDeleteWarehouseManagerException extends EmployeeException
+{
+}

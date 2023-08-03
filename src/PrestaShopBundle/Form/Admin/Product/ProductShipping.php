@@ -29,10 +29,12 @@ namespace PrestaShopBundle\Form\Admin\Product;
 use Currency;
 use PrestaShop\PrestaShop\Adapter\Carrier\CarrierDataProvider;
 use PrestaShop\PrestaShop\Adapter\LegacyContext;
+use PrestaShop\PrestaShop\Adapter\Warehouse\WarehouseDataProvider;
 use PrestaShopBundle\Form\Admin\Type\CommonAbstractType;
 use PrestaShopBundle\Form\Admin\Type\TranslateType;
 use PrestaShopBundle\Form\FormHelper;
 use Symfony\Component\Form\Extension\Core\Type as FormType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -65,6 +67,10 @@ class ProductShipping extends CommonAbstractType
      */
     public $translator;
     /**
+     * @var array
+     */
+    private $warehouses;
+    /**
      * @var string
      */
     private $dimensionUnit;
@@ -78,6 +84,7 @@ class ProductShipping extends CommonAbstractType
      *
      * @param TranslatorInterface $translator
      * @param LegacyContext $legacyContext
+     * @param WarehouseDataProvider $warehouseDataProvider
      * @param CarrierDataProvider $carrierDataProvider
      * @param string $dimensionUnit
      * @param string $weightUnit
@@ -85,6 +92,7 @@ class ProductShipping extends CommonAbstractType
     public function __construct(
         TranslatorInterface $translator,
         LegacyContext $legacyContext,
+        WarehouseDataProvider $warehouseDataProvider,
         CarrierDataProvider $carrierDataProvider,
         string $dimensionUnit,
         string $weightUnit
@@ -93,6 +101,7 @@ class ProductShipping extends CommonAbstractType
         $this->legacyContext = $legacyContext;
         $this->currency = $legacyContext->getContext()->currency;
         $this->locales = $this->legacyContext->getLanguages();
+        $this->warehouses = $warehouseDataProvider->getWarehouses();
 
         $carriers = $carrierDataProvider->getCarriers(
             $this->locales[0]['id_lang'],
@@ -252,6 +261,23 @@ class ProductShipping extends CommonAbstractType
                     'label' => $this->translator->trans('Delivery time of in-stock products:', [], 'Admin.Catalog.Feature'),
                 ]
             );
+
+        foreach ($this->warehouses as $warehouse) {
+            $builder->add(
+                'warehouse_combination_' . $warehouse['id_warehouse'],
+                CollectionType::class,
+                [
+                    'entry_type' => 'PrestaShopBundle\Form\Admin\Product\ProductWarehouseCombination',
+                    'entry_options' => [
+                        'id_warehouse' => $warehouse['id_warehouse'],
+                    ],
+                    'prototype' => true,
+                    'allow_add' => true,
+                    'required' => false,
+                    'label' => $warehouse['name'],
+                ]
+            );
+        }
     }
 
     /**

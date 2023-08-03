@@ -185,7 +185,7 @@ export default class BOBasePage extends CommonPage {
 
   public readonly performanceLink: string;
 
-  public readonly administrationLink: string;
+  private readonly administrationLink: string;
 
   public readonly emailLink: string;
 
@@ -225,7 +225,7 @@ export default class BOBasePage extends CommonPage {
 
   protected alertBlockCloseButton: string;
 
-  protected alertSuccessBlock: string;
+  protected readonly alertSuccessBlock: string;
 
   private readonly alertDangerBlock: string;
 

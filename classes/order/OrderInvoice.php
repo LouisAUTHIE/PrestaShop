@@ -270,8 +270,13 @@ class OrderInvoiceCore extends ObjectModel
      */
     protected function setProductCurrentStock(&$product)
     {
-        $product['current_stock'] = StockAvailable::getQuantityAvailableByProduct((int) $product['product_id'], (int) $product['product_attribute_id'], (int) $product['id_shop']);
-        $product['location'] = StockAvailable::getLocation((int) $product['product_id'], (int) $product['product_attribute_id'], (int) $product['id_shop']);
+        if (Configuration::get('PS_ADVANCED_STOCK_MANAGEMENT')
+            && (int) $product['advanced_stock_management'] == 1
+            && (int) $product['id_warehouse'] > 0) {
+            $product['current_stock'] = StockManagerFactory::getManager()->getProductPhysicalQuantities($product['product_id'], $product['product_attribute_id'], null, true);
+        } else {
+            $product['current_stock'] = '--';
+        }
     }
 
     /**
