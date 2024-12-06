@@ -30,3 +30,5 @@ if (isset(Context::getContext()->controller)) {
     $controller = new FrontController();
     $controller->init();
 }
+
+//Test commentaire
